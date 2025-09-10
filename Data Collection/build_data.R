@@ -103,5 +103,84 @@ wait_times_full <- {
     left_join(
       metadata |> mutate(DATE = mdy(DATE)),
       by = c("date" = "DATE")
+    ) |> 
+    # mutate
+    mutate(
+      # convert day of week to character (for plotting purposes)
+      weekday = case_when(
+        DAYOFWEEK == 1 ~ "Monday",
+        DAYOFWEEK == 2 ~ "Tuesday",
+        DAYOFWEEK == 3 ~ "Wednesday",
+        DAYOFWEEK == 4 ~ "Thursday",
+        DAYOFWEEK == 5 ~ "Friday", 
+        DAYOFWEEK == 6 ~ "Saturday",
+        DAYOFWEEK == 7 ~ "Sunday"
+      ),
+      
+      # convert day of week to character
+      weekday = factor(
+        # condition
+        case_when(
+          DAYOFWEEK == 1 ~ "Monday",
+          DAYOFWEEK == 2 ~ "Tuesday",
+          DAYOFWEEK == 3 ~ "Wednesday",
+          DAYOFWEEK == 4 ~ "Thursday",
+          DAYOFWEEK == 5 ~ "Friday", 
+          DAYOFWEEK == 6 ~ "Saturday",
+          DAYOFWEEK == 7 ~ "Sunday"
+        ),
+        
+        # levels
+        levels = c(
+          "Monday",
+          "Tuesday",
+          "Wednesday",
+          "Thursday",
+          "Friday",
+          "Saturday",
+          "Sunday"
+        )
+      ),
+      
+      # hour of day
+      hour_of_day = hour(datetime),
+      
+      # year as factor
+      YEAR = factor(YEAR)
+    ) |> 
+    # filter
+    filter(
+      # only use wait times that make sense
+      posted_wait >= 0 & posted_wait <= 400 |
+        actual_wait >= 0 & actual_wait <= 400,
+      
+      # pre-COVID
+      YEAR %in% c(2015:2019),
+      
+      # only use primary open hours
+      hour_of_day >= 8 & hour_of_day <= 21,
+    ) |> 
+    # select columns
+    select(
+      ride_name,
+      datetime,
+      YEAR,
+      hour_of_day,
+      posted_wait,
+      actual_wait,
+      ride_duration,
+      weekday,
+      SEASON,
+      WDWMEANTEMP,
+      inSession
+    ) |> 
+    # drop NAs
+    drop_na(
+      weekday, 
+      SEASON
     )
 }
+
+
+## write to csv
+write.csv(wait_times_full, "wait_times_full.csv")
